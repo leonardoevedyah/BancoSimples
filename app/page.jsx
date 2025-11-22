@@ -21,6 +21,12 @@ export default function HomePage() {
         >
           Fazer login
         </Link>
+        <Link
+          href="/(auth)/signup"
+          className="rounded border border-green-600 px-4 py-2 text-green-700 hover:bg-green-50"
+        >
+          Criar conta
+        </Link>
       </div>
     </div>
   );

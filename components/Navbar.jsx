@@ -8,6 +8,7 @@ const links = [
   { href: '/questions', label: 'Questões' },
   { href: '/notebooks', label: 'Cadernos' },
   { href: '/review', label: 'Revisão' },
+  { href: '/import', label: 'Importar' },
 ];
 
 export default function Navbar() {
@@ -33,10 +34,16 @@ export default function Navbar() {
             );
           })}
           <Link
+            href="/(auth)/signup"
+            className="rounded border border-blue-600 px-3 py-1 text-blue-700 hover:bg-blue-50"
+          >
+            Criar conta
+          </Link>
+          <Link
             href="/(auth)/login"
             className="rounded border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50"
           >
-            Sair / Login
+            Login
           </Link>
         </div>
       </nav>

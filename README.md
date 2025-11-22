@@ -67,6 +67,26 @@ npm run dev
 2. Faça login em `/login`.
 3. Crie cadernos em `/notebooks`, resolva-os em `/notebooks/[id]`, revise erros em `/review` e gere PDFs via endpoint `/api/export` (usado pelo botão de exportação).
 
+## Cadastro e importação de questões
+- Para inserir questões manualmente, acesse `/import` e preencha o formulário "Cadastro manual" (disciplina, tópico, enunciado, 5 alternativas, índice correto, comentário e dificuldade).
+- Para importar em lote, envie um arquivo JSON na mesma tela contendo:
+  ```json
+  {
+    "questions": [
+      {
+        "subject": "Disciplina",
+        "topic": "Tópico",
+        "statement": "Enunciado...",
+        "options": ["A", "B", "C", "D", "E"],
+        "correct_option": 0,
+        "explanation": "Comentário",
+        "difficulty": "medio"
+      }
+    ]
+  }
+  ```
+- Prompt sugerido para o ChatGPT gerar o arquivo compatível: "Gere um arquivo JSON com um array chamado questions. Cada questão deve ter subject, topic, statement, options (5 alternativas), correct_option (índice 0 a 4), explanation e difficulty (facil/medio/dificil). Devolva apenas o JSON final." O mesmo prompt está disponível na página `/import` para copiar e usar diretamente.
+
 ## Dicas de operação
 - Se trocar nomes de bucket ou tabelas, ajuste os trechos de código correspondentes em `app/api/export/route.js` e nas páginas de cadernos/questões.
 - Para monitorar erros de produção, habilite logs no Netlify e no Supabase (SQL Editor → Logs).
