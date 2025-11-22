@@ -1,0 +1,54 @@
+# Como pedir questões médicas ao ChatGPT
+
+Use o texto abaixo para gerar arquivos compatíveis com a aba **Importar** do Banco de Questões. Ajuste a especialidade, o tema e a dificuldade conforme necessário.
+
+## Prompt sugerido
+"""
+Você é um criador de questões de Medicina. Gere um JSON com um array chamado "questions". Cada item deve ter:
+- subject: disciplina (ex.: Clinica Médica, Pediatria, Cirurgia)
+- topic: tópico específico dentro da disciplina
+- statement: enunciado clínico claro e conciso
+- options: array com exatamente 5 alternativas em texto
+- correct_option: índice da alternativa correta (0 a 4)
+- explanation: comentário/gabarito justificando a resposta
+- difficulty: "facil", "medio" ou "dificil"
+
+Regras:
+- As alternativas precisam ser mutuamente exclusivas e plausíveis.
+- Não repita o enunciado nas alternativas.
+- Inclua casos clínicos variados e focados em raciocínio.
+- Linguagem em português.
+- Entregue apenas o JSON final, sem texto extra.
+
+Formato final esperado:
+{
+  "questions": [
+    {
+      "subject": "Clinica Médica",
+      "topic": "Pneumonia adquirida na comunidade",
+      "statement": "Paciente de 45 anos com tosse, febre e ausculta com estertores em base direita...",
+      "options": [
+        "Solicitar TC de tórax imediata",
+        "Iniciar amoxicilina + clavulanato",
+        "Suspender antibiótico e observar",
+        "Internar em UTI preventivamente",
+        "Prescrever broncodilatador isolado"
+      ],
+      "correct_option": 1,
+      "explanation": "Quadro típico de PAC de baixo risco; amoxicilina + clavulanato é adequado.",
+      "difficulty": "medio"
+    }
+  ]
+}
+"""
+
+## Checklist rápido antes de importar
+- O arquivo deve ser JSON válido (UTF-8), com a chave raiz "questions".
+- Cada questão precisa ter **todas** as chaves: subject, topic, statement, options (5 itens), correct_option (0–4), explanation, difficulty.
+- Evite caracteres especiais escondidos ou comentários fora do JSON.
+- Salve o arquivo com extensão .json e envie na aba Importar.
+
+## Dicas para uso incremental
+- Peça ao ChatGPT para gerar lotes pequenos (5–20 questões) e revise o conteúdo antes de importar.
+- Varie disciplinas/tópicos para equilibrar o banco.
+- Se precisar de outro formato, mantenha os nomes das chaves idênticos para compatibilidade.
