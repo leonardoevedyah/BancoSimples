@@ -8,7 +8,14 @@ import { supabaseClient } from '../../lib/supabaseClient';
 export default function NotebooksPage() {
   const router = useRouter();
   const [session, setSession] = useState(null);
-  const [form, setForm] = useState({ title: '', subject: '', topic: '', difficulty: '', amount: 10 });
+  const [form, setForm] = useState({
+    title: '',
+    subject: '',
+    topic: '',
+    difficulty: '',
+    amount: 10,
+    excludeRecent: '',
+  });
   const [message, setMessage] = useState(null);
   const [notebooks, setNotebooks] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -71,12 +78,35 @@ export default function NotebooksPage() {
     if (form.subject) query = query.ilike('subject', `%${form.subject}%`);
     if (form.topic) query = query.ilike('topic', `%${form.topic}%`);
     if (form.difficulty) query = query.eq('difficulty', form.difficulty);
+
+    if (form.excludeRecent) {
+      const since = new Date();
+      if (form.excludeRecent === '24h') since.setHours(since.getHours() - 24);
+      if (form.excludeRecent === '7d') since.setDate(since.getDate() - 7);
+
+      const { data: recentAttempts, error: recentError } = await supabaseClient
+        .from('question_attempts')
+        .select('question_id')
+        .eq('user_id', userId)
+        .gte('created_at', since.toISOString());
+
+      if (recentError) {
+        setMessage('Erro ao aplicar filtro de recentes.');
+        return;
+      }
+
+      const excludeIds = Array.from(new Set((recentAttempts || []).map((row) => row.question_id)));
+      if (excludeIds.length) {
+        query = query.not('id', 'in', `(${excludeIds.map((id) => `"${id}"`).join(',')})`);
+      }
+    }
     const { data: questions } = await query.limit(Number(form.amount));
 
     const filters = {
       subject: form.subject,
       topic: form.topic,
       difficulty: form.difficulty,
+      excludeRecent: form.excludeRecent,
     };
 
     const { data: notebook, error } = await supabaseClient
@@ -100,7 +130,7 @@ export default function NotebooksPage() {
     }
 
     setMessage('Caderno criado com sucesso!');
-    setForm({ title: '', subject: '', topic: '', difficulty: '', amount: 10 });
+    setForm({ title: '', subject: '', topic: '', difficulty: '', amount: 10, excludeRecent: '' });
     const { data: reload } = await supabaseClient
       .from('notebooks')
       .select('*')
@@ -181,6 +211,19 @@ export default function NotebooksPage() {
               <option value="facil">Fácil</option>
               <option value="medio">Médio</option>
               <option value="dificil">Difícil</option>
+            </select>
+          </label>
+          <label className="text-sm text-slate-700">
+            Excluir tentadas
+            <select
+              name="excludeRecent"
+              value={form.excludeRecent}
+              onChange={handleChange}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            >
+              <option value="">Nenhum filtro</option>
+              <option value="24h">Últimas 24h</option>
+              <option value="7d">Últimos 7 dias</option>
             </select>
           </label>
         </div>
