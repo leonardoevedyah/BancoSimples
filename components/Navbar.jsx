@@ -9,6 +9,7 @@ const links = [
   { href: '/notebooks', label: 'Cadernos' },
   { href: '/review', label: 'Revisão' },
   { href: '/import', label: 'Importar' },
+  { href: '/stats', label: 'Estatísticas' },
 ];
 
 export default function Navbar() {
