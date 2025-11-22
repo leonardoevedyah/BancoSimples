@@ -13,6 +13,7 @@ export default function NotebookDetailPage() {
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [checked, setChecked] = useState({});
   const [finished, setFinished] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -59,7 +60,7 @@ export default function NotebookDetailPage() {
   const saveCurrentAttempt = async () => {
     const userId = session?.user?.id;
     const question = questions[currentIndex];
-    if (!userId || !question) return;
+    if (!userId || !question) return null;
     const selectedOption = answers[question.id];
     const isCorrect = selectedOption === question.correct_option;
     await supabaseClient.from('question_attempts').insert({
@@ -72,9 +73,33 @@ export default function NotebookDetailPage() {
     return isCorrect;
   };
 
+  const confirmCurrent = async () => {
+    setMessage(null);
+    const question = questions[currentIndex];
+    if (!question) return;
+
+    const selected = answers[question.id];
+    if (selected == null) {
+      setMessage('Selecione uma alternativa para confirmar.');
+      return;
+    }
+
+    const isCorrect = await saveCurrentAttempt();
+    setChecked((prev) => ({ ...prev, [question.id]: { checked: true, isCorrect } }));
+    setMessage(isCorrect ? 'Acertou! Gabarito liberado.' : 'Você errou. Veja o gabarito.');
+  };
+
   const handleNext = async () => {
-    await saveCurrentAttempt();
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
+
+    if (!checked[currentQuestion.id]?.checked) {
+      setMessage('Confirme a resposta antes de avançar.');
+      return;
+    }
+
     if (currentIndex < questions.length - 1) {
+      setMessage(null);
       setCurrentIndex(currentIndex + 1);
     } else {
       finalizeSession();
@@ -107,6 +132,7 @@ export default function NotebookDetailPage() {
   }
 
   const currentQuestion = questions[currentIndex];
+  const currentCheck = currentQuestion ? checked[currentQuestion.id] : null;
 
   return (
     <div className="space-y-4">
@@ -123,13 +149,21 @@ export default function NotebookDetailPage() {
           question={currentQuestion}
           onSelect={handleSelect}
           selectedOption={answers[currentQuestion.id]}
-          showAnswer={finished}
+          showAnswer={finished || currentCheck?.checked}
         />
       ) : (
         <p>Nenhuma questão encontrada.</p>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={confirmCurrent}
+          className="rounded border border-green-600 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-50"
+          disabled={finished}
+        >
+          Confirmar resposta
+        </button>
         <button
           type="button"
           onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
@@ -146,6 +180,15 @@ export default function NotebookDetailPage() {
         >
           {currentIndex === questions.length - 1 ? 'Finalizar' : 'Próxima'}
         </button>
+        {currentCheck?.checked && (
+          <span
+            className={`rounded px-3 py-2 text-sm ${
+              currentCheck.isCorrect ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            }`}
+          >
+            {currentCheck.isCorrect ? 'Acertou' : 'Errou'}
+          </span>
+        )}
       </div>
 
       {message && <p className="text-sm text-blue-700">{message}</p>}

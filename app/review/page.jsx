@@ -1,20 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabaseClient } from '../../lib/supabaseClient';
 import QuestionCard from '../../components/QuestionCard';
 
 export default function ReviewPage() {
+  const router = useRouter();
   const [session, setSession] = useState(null);
   const [attempts, setAttempts] = useState([]);
 
   useEffect(() => {
     const loadSession = async () => {
       const { data } = await supabaseClient.auth.getSession();
+      if (!data.session) {
+        router.push('/login');
+        return;
+      }
       setSession(data.session);
     };
     loadSession();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!session) return;

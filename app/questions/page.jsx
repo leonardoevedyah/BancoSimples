@@ -1,16 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabaseClient } from '../../lib/supabaseClient';
 import QuestionCard from '../../components/QuestionCard';
 
 export default function QuestionsPage() {
+  const router = useRouter();
   const [filters, setFilters] = useState({ subject: '', topic: '', difficulty: '' });
   const [questions, setQuestions] = useState([]);
   const [page, setPage] = useState(0);
   const [message, setMessage] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
+  const [session, setSession] = useState(null);
+  const [attempts, setAttempts] = useState({});
 
   const pageSize = 10;
 
@@ -27,6 +31,18 @@ export default function QuestionsPage() {
     setSubjects(uniqueSubjects);
     setTopics(uniqueTopics);
   };
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      if (!data.session) {
+        router.push('/login');
+        return;
+      }
+      setSession(data.session);
+    };
+    checkSession();
+  }, [router]);
 
   const loadQuestions = async () => {
     let query = supabaseClient.from('questions').select('*').order('created_at', { ascending: false });
@@ -47,9 +63,10 @@ export default function QuestionsPage() {
   }, []);
 
   useEffect(() => {
+    if (!session) return;
     loadQuestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, session]);
 
   const handleFilter = (evt) => {
     setFilters({ ...filters, [evt.target.name]: evt.target.value });
@@ -61,22 +78,40 @@ export default function QuestionsPage() {
     loadQuestions();
   };
 
-  const registerAttempt = async (questionId) => {
+  const confirmAttempt = async (question) => {
     setMessage(null);
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    if (!sessionData.session) {
-      setMessage('Faça login para registrar tentativas.');
+    if (!session) {
+      setMessage('Faça login para responder.');
       return;
     }
-    const userId = sessionData.session.user.id;
+
+    const selection = attempts[question.id]?.selected;
+    if (selection == null) {
+      setMessage('Escolha uma alternativa antes de confirmar.');
+      return;
+    }
+
+    const isCorrect = selection === question.correct_option;
     await supabaseClient.from('question_attempts').insert({
       session_id: crypto.randomUUID(),
-      user_id: userId,
-      question_id: questionId,
-      selected_option: null,
-      is_correct: null,
+      user_id: session.user.id,
+      question_id: question.id,
+      selected_option: selection,
+      is_correct: isCorrect,
     });
-    setMessage('Tentativa registrada para revisão futura.');
+
+    setAttempts((prev) => ({
+      ...prev,
+      [question.id]: { selected: selection, checked: true, isCorrect },
+    }));
+    setMessage(isCorrect ? 'Acertou! Gabarito exibido.' : 'Você errou. Confira o gabarito.');
+  };
+
+  const handleSelectOption = (questionId, optionIndex) => {
+    setAttempts((prev) => ({
+      ...prev,
+      [questionId]: { ...prev[questionId], selected: optionIndex },
+    }));
   };
 
   const deleteQuestion = async (questionId) => {
@@ -105,7 +140,10 @@ export default function QuestionsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Questões</h1>
 
-      <form className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4" onSubmit={handleSubmit}>
+      <form
+        className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4"
+        onSubmit={handleSubmit}
+      >
         <label className="text-sm text-slate-700">
           Disciplina
           <select
@@ -162,27 +200,44 @@ export default function QuestionsPage() {
       {message && <p className="text-sm text-blue-700">{message}</p>}
 
       <div className="space-y-4">
-        {questions.map((q) => (
-          <div key={q.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <QuestionCard question={q} />
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => registerAttempt(q.id)}
-                className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-              >
-                Responder / Marcar para revisão
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteQuestion(q.id)}
-                className="rounded border border-red-600 px-4 py-2 text-red-700 hover:bg-red-50"
-              >
-                Deletar questão ruim
-              </button>
+        {questions.map((q) => {
+          const attempt = attempts[q.id] || {};
+          return (
+            <div key={q.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <QuestionCard
+                question={q}
+                onSelect={(idx) => handleSelectOption(q.id, idx)}
+                selectedOption={attempt.selected}
+                showAnswer={attempt.checked}
+              />
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => confirmAttempt(q)}
+                  className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+                >
+                  Confirmar resposta
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteQuestion(q.id)}
+                  className="rounded border border-red-600 px-4 py-2 text-red-700 hover:bg-red-50"
+                >
+                  Deletar questão ruim
+                </button>
+                {attempt.checked && (
+                  <span
+                    className={`rounded px-3 py-2 text-sm ${
+                      attempt.isCorrect ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                    }`}
+                  >
+                    {attempt.isCorrect ? 'Acertou' : 'Errou'}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex items-center gap-3">

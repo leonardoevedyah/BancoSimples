@@ -2,21 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabaseClient } from '../../lib/supabaseClient';
 
 export default function NotebooksPage() {
+  const router = useRouter();
   const [session, setSession] = useState(null);
   const [form, setForm] = useState({ title: '', subject: '', topic: '', difficulty: '', amount: 10 });
   const [message, setMessage] = useState(null);
   const [notebooks, setNotebooks] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [topics, setTopics] = useState([]);
 
   useEffect(() => {
     const loadSession = async () => {
       const { data } = await supabaseClient.auth.getSession();
+      if (!data.session) {
+        router.push('/login');
+        return;
+      }
       setSession(data.session);
     };
     loadSession();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!session) return;
@@ -30,6 +38,20 @@ export default function NotebooksPage() {
     };
     loadNotebooks();
   }, [session]);
+
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      const { data, error } = await supabaseClient.from('questions').select('subject, topic');
+      if (error) return;
+      const uniqueSubjects = Array.from(
+        new Set((data || []).map((row) => row.subject).filter(Boolean)),
+      ).sort();
+      const uniqueTopics = Array.from(new Set((data || []).map((row) => row.topic).filter(Boolean))).sort();
+      setSubjects(uniqueSubjects);
+      setTopics(uniqueTopics);
+    };
+    loadFilterOptions();
+  }, []);
 
   const handleChange = (evt) => {
     setForm({ ...form, [evt.target.name]: evt.target.value });
@@ -117,23 +139,35 @@ export default function NotebooksPage() {
           </label>
           <label className="text-sm text-slate-700">
             Disciplina
-            <input
-              type="text"
+            <select
               name="subject"
               value={form.subject}
               onChange={handleChange}
               className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-            />
+            >
+              <option value="">Todas</option>
+              {subjects.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="text-sm text-slate-700">
             Tópico
-            <input
-              type="text"
+            <select
               name="topic"
               value={form.topic}
               onChange={handleChange}
               className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-            />
+            >
+              <option value="">Todos</option>
+              {topics.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="text-sm text-slate-700">
             Dificuldade
