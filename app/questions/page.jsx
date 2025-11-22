@@ -59,6 +59,28 @@ export default function QuestionsPage() {
     setMessage('Tentativa registrada para revisão futura.');
   };
 
+  const deleteQuestion = async (questionId) => {
+    setMessage(null);
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) {
+      setMessage('Erro ao verificar sessão.');
+      return;
+    }
+    if (!sessionData.session) {
+      setMessage('Faça login para remover questões.');
+      return;
+    }
+
+    const { error } = await supabaseClient.from('questions').delete().eq('id', questionId);
+    if (error) {
+      setMessage(`Erro ao remover: ${error.message}`);
+      return;
+    }
+
+    setMessage('Questão removida com sucesso.');
+    setQuestions((prev) => prev.filter((item) => item.id !== questionId));
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Questões</h1>
@@ -111,13 +133,22 @@ export default function QuestionsPage() {
         {questions.map((q) => (
           <div key={q.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <QuestionCard question={q} />
-            <button
-              type="button"
-              onClick={() => registerAttempt(q.id)}
-              className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-            >
-              Responder / Marcar para revisão
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => registerAttempt(q.id)}
+                className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+              >
+                Responder / Marcar para revisão
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteQuestion(q.id)}
+                className="rounded border border-red-600 px-4 py-2 text-red-700 hover:bg-red-50"
+              >
+                Deletar questão ruim
+              </button>
+            </div>
           </div>
         ))}
       </div>
