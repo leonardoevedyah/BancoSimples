@@ -89,13 +89,18 @@ export default function ReviewPage() {
       <div className="space-y-6">
         {groupedAttempts.map((group) => (
           <div key={`${group.subject}-${group.topic}`} className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-800">{group.subject}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-800">
+                {group.subject}
+              </span>
               <span className="rounded-full bg-slate-50 px-3 py-1 text-sm text-slate-700">{group.topic}</span>
             </div>
             <div className="space-y-4">
               {group.items.map((attempt) => (
-                <div key={attempt.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                <div
+                  key={attempt.id}
+                  className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+                >
                   <QuestionCard question={attempt.question} showAnswer selectedOption={attempt.selected_option} />
                   <p className="text-sm text-slate-700">
                     Você marcou: {attempt.selected_option != null ? String.fromCharCode(65 + attempt.selected_option) : '—'} | Correta:{' '}

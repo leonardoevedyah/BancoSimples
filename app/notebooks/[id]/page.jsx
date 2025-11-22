@@ -136,9 +136,9 @@ export default function NotebookDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{notebook.title}</h1>
+          <h1 className="text-2xl font-bold leading-tight">{notebook.title}</h1>
           <p className="text-sm text-slate-600">Questão {currentIndex + 1} de {questions.length}</p>
         </div>
         {finished && <p className="text-green-700">Sessão concluída</p>}
@@ -155,11 +155,11 @@ export default function NotebookDetailPage() {
         <p>Nenhuma questão encontrada.</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <button
           type="button"
           onClick={confirmCurrent}
-          className="rounded border border-green-600 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-50"
+          className="w-full rounded border border-green-600 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-50 sm:w-auto"
           disabled={finished}
         >
           Confirmar resposta
@@ -167,7 +167,7 @@ export default function NotebookDetailPage() {
         <button
           type="button"
           onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-          className="rounded border border-slate-300 px-4 py-2 text-sm disabled:opacity-50"
+          className="w-full rounded border border-slate-300 px-4 py-2 text-sm disabled:opacity-50 sm:w-auto"
           disabled={currentIndex === 0}
         >
           Anterior
@@ -175,7 +175,7 @@ export default function NotebookDetailPage() {
         <button
           type="button"
           onClick={handleNext}
-          className="rounded bg-blue-600 px-4 py-2 text-white"
+          className="w-full rounded bg-blue-600 px-4 py-2 text-white sm:w-auto"
           disabled={finished}
         >
           {currentIndex === questions.length - 1 ? 'Finalizar' : 'Próxima'}

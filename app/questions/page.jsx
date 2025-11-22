@@ -231,7 +231,7 @@ export default function QuestionsPage() {
       <h1 className="text-2xl font-bold">Questões</h1>
 
       <form
-        className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4"
+        className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4"
         onSubmit={handleSubmit}
       >
         <label className="text-sm text-slate-700">
@@ -294,7 +294,10 @@ export default function QuestionsPage() {
           </select>
         </label>
         <div className="flex items-end">
-          <button type="submit" className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+          <button
+            type="submit"
+            className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
             Filtrar
           </button>
         </div>
@@ -307,7 +310,10 @@ export default function QuestionsPage() {
           const attempt = attempts[q.id] || {};
           const stats = questionStats[q.id] || { total: 0, correct: 0, wrong: 0, lastAttempt: null };
           return (
-            <div key={q.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div
+              key={q.id}
+              className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+            >
               <div className="text-xs text-slate-600">
                 Tentativas: {stats.total} · Acertos: {stats.correct} · Erros: {stats.wrong} · Última vez:{' '}
                 {formatTimeAgo(stats.lastAttempt)}
@@ -318,18 +324,18 @@ export default function QuestionsPage() {
                 selectedOption={attempt.selected}
                 showAnswer={attempt.checked}
               />
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <button
                   type="button"
                   onClick={() => confirmAttempt(q)}
-                  className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+                  className="w-full rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 sm:w-auto"
                 >
                   Confirmar resposta
                 </button>
                 <button
                   type="button"
                   onClick={() => deleteQuestion(q.id)}
-                  className="rounded border border-red-600 px-4 py-2 text-red-700 hover:bg-red-50"
+                  className="w-full rounded border border-red-600 px-4 py-2 text-red-700 hover:bg-red-50 sm:w-auto"
                 >
                   Deletar questão ruim
                 </button>

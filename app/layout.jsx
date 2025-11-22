@@ -11,7 +11,7 @@ export default function RootLayout({ children }) {
     <html lang="pt-BR">
       <body className="min-h-screen bg-slate-50 text-slate-900">
         <Navbar />
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <main className="mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-8">{children}</main>
       </body>
     </html>
   );

@@ -171,14 +171,14 @@ export default function ImportPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-3">
-        <h1 className="text-2xl font-bold">Importar questões</h1>
-        <p className="text-slate-700">
+        <h1 className="text-2xl font-bold leading-tight">Importar questões</h1>
+        <p className="text-sm leading-relaxed text-slate-700">
           Faça login (ou crie conta) e utilize esta aba para cadastrar novas questões manualmente ou
           importar um lote gerado pelo ChatGPT. Usuário atual: {userEmail || 'não identificado'}
         </p>
       </div>
 
-      <section className="grid gap-6 md:grid-cols-2">
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold">Cadastro manual</h2>
           <form className="mt-4 space-y-3" onSubmit={saveManualQuestion}>
@@ -249,7 +249,7 @@ export default function ImportPage() {
             />
             <button
               type="submit"
-              className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 sm:w-auto"
             >
               Salvar questão
             </button>
@@ -258,12 +258,17 @@ export default function ImportPage() {
 
         <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold">Importação em lote</h2>
-          <p className="text-sm text-slate-700">
+          <p className="text-sm leading-relaxed text-slate-700">
             Envie um arquivo JSON seguindo o formato abaixo. Você pode gerar o arquivo com o ChatGPT
             usando o prompt sugerido ao final da página.
           </p>
           <form className="mt-4 space-y-3" onSubmit={importQuestions}>
-            <input type="file" accept="application/json" onChange={handleFileRead} />
+            <input
+              type="file"
+              accept="application/json"
+              onChange={handleFileRead}
+              className="text-sm text-slate-700"
+            />
             <textarea
               value={fileContent}
               onChange={(e) => setFileContent(e.target.value)}
@@ -274,7 +279,7 @@ export default function ImportPage() {
             />
             <button
               type="submit"
-              className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+              className="w-full rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 sm:w-auto"
             >
               Importar arquivo
             </button>

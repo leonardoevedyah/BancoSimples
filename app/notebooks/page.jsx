@@ -143,7 +143,7 @@ export default function NotebooksPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Cadernos</h1>
       <form className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <label className="text-sm text-slate-700">
             Título
             <input
@@ -227,7 +227,10 @@ export default function NotebooksPage() {
             </select>
           </label>
         </div>
-        <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+        <button
+          type="submit"
+          className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 sm:w-auto"
+        >
           Criar caderno
         </button>
         {message && <p className="text-sm text-blue-700">{message}</p>}
@@ -238,9 +241,12 @@ export default function NotebooksPage() {
         <div className="mt-3 space-y-2">
           {notebooks.length === 0 && <p>Nenhum caderno criado.</p>}
           {notebooks.map((nb) => (
-            <div key={nb.id} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2">
+            <div
+              key={nb.id}
+              className="flex flex-col gap-2 rounded border border-slate-200 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div>
-                <p className="font-semibold">{nb.title}</p>
+                <p className="font-semibold leading-tight">{nb.title}</p>
                 <p className="text-xs text-slate-600">
                   Criado em {new Date(nb.created_at).toLocaleDateString('pt-BR')}
                 </p>

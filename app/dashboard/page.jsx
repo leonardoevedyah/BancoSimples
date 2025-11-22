@@ -74,9 +74,12 @@ export default function DashboardPage() {
         {recentNotebooks.length === 0 && <p>Nenhum caderno criado ainda.</p>}
         <ul className="space-y-2">
           {recentNotebooks.map((nb) => (
-            <li key={nb.id} className="flex items-center justify-between">
+            <li
+              key={nb.id}
+              className="flex flex-col gap-2 rounded border border-slate-200 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div>
-                <p className="font-semibold">{nb.title}</p>
+                <p className="font-semibold leading-tight">{nb.title}</p>
                 <p className="text-xs text-slate-600">
                   Criado em {new Date(nb.created_at).toLocaleString('pt-BR')}
                 </p>
