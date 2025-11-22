@@ -9,8 +9,24 @@ export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
   const [page, setPage] = useState(0);
   const [message, setMessage] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [topics, setTopics] = useState([]);
 
   const pageSize = 10;
+
+  const loadFilterOptions = async () => {
+    const { data, error } = await supabaseClient.from('questions').select('subject, topic');
+    if (error) {
+      setMessage('Erro ao carregar filtros disponíveis.');
+      return;
+    }
+    const uniqueSubjects = Array.from(
+      new Set((data || []).map((row) => row.subject).filter(Boolean)),
+    ).sort();
+    const uniqueTopics = Array.from(new Set((data || []).map((row) => row.topic).filter(Boolean))).sort();
+    setSubjects(uniqueSubjects);
+    setTopics(uniqueTopics);
+  };
 
   const loadQuestions = async () => {
     let query = supabaseClient.from('questions').select('*').order('created_at', { ascending: false });
@@ -25,6 +41,10 @@ export default function QuestionsPage() {
     }
     setQuestions(data || []);
   };
+
+  useEffect(() => {
+    loadFilterOptions();
+  }, []);
 
   useEffect(() => {
     loadQuestions();
@@ -88,23 +108,35 @@ export default function QuestionsPage() {
       <form className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4" onSubmit={handleSubmit}>
         <label className="text-sm text-slate-700">
           Disciplina
-          <input
-            type="text"
+          <select
             name="subject"
             value={filters.subject}
             onChange={handleFilter}
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
+          >
+            <option value="">Todas</option>
+            {subjects.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="text-sm text-slate-700">
           Tópico
-          <input
-            type="text"
+          <select
             name="topic"
             value={filters.topic}
             onChange={handleFilter}
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
+          >
+            <option value="">Todos</option>
+            {topics.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="text-sm text-slate-700">
           Dificuldade
