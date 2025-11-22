@@ -22,7 +22,7 @@ export default function SignupPage() {
     setMessage(null);
 
     if (form.coupon !== COUPON_CODE) {
-      setMessage({ type: 'error', text: 'Cupom inválido. Use CONVIDADO.' });
+      setMessage({ type: 'error', text: 'Cupom inválido.' });
       return;
     }
 
@@ -90,7 +90,7 @@ export default function SignupPage() {
           />
         </label>
         <label className="block text-sm font-medium text-slate-700">
-          Cupom (use CONVIDADO)
+          Cupom
           <input
             type="text"
             name="coupon"
