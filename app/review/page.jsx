@@ -25,13 +25,22 @@ export default function ReviewPage() {
   useEffect(() => {
     if (!session) return;
     const loadAttempts = async () => {
-      const { data } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('question_attempts')
-        .select('*, question:question_id(*)')
+        .select(
+          'id, selected_option, is_correct, created_at, question:question_id(id, subject, topic, statement, options, correct_option, explanation)'
+        )
         .eq('user_id', session.user.id)
         .eq('is_correct', false)
         .order('created_at', { ascending: false })
         .limit(50);
+
+      if (error) {
+        console.error('Erro ao carregar revisões', error.message);
+        setAttempts([]);
+        return;
+      }
+
       setAttempts(data || []);
     };
     loadAttempts();
