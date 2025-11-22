@@ -27,27 +27,47 @@ export default function ReviewPage() {
     if (!session) return;
     const loadAttempts = async () => {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabaseClient
+      const { data: attemptRows, error: attemptsError } = await supabaseClient
         .from('question_attempts')
-        .select(
-          'id, selected_option, is_correct, created_at, question:question_id(id, subject, topic, statement, options, correct_option, explanation)'
-        )
+        .select('id, question_id, selected_option, is_correct, created_at')
         .eq('user_id', session.user.id)
         .eq('is_correct', false)
         .gte('created_at', since)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) {
-        console.error('Erro ao carregar revisões', error.message);
+      if (attemptsError) {
+        console.error('Erro ao carregar revisões', attemptsError.message);
         setAttempts([]);
         setGroupedAttempts([]);
         return;
       }
 
-      const attemptsList = data || [];
-      setAttempts(attemptsList);
-      const grouped = attemptsList.reduce((acc, attempt) => {
+      const ids = Array.from(new Set((attemptRows || []).map((row) => row.question_id)));
+      let questionsMap = {};
+      if (ids.length) {
+        const { data: questionsData, error: questionsError } = await supabaseClient
+          .from('questions')
+          .select('id, subject, topic, statement, options, correct_option, explanation')
+          .in('id', ids);
+
+        if (questionsError) {
+          console.error('Erro ao carregar questões para revisão', questionsError.message);
+        } else {
+          questionsMap = (questionsData || []).reduce((acc, q) => {
+            acc[q.id] = q;
+            return acc;
+          }, {});
+        }
+      }
+
+      const attemptsWithQuestions = (attemptRows || []).map((attempt) => ({
+        ...attempt,
+        question: questionsMap[attempt.question_id] || null,
+      }));
+
+      setAttempts(attemptsWithQuestions);
+      const grouped = attemptsWithQuestions.reduce((acc, attempt) => {
         const subject = attempt.question?.subject || 'Sem disciplina';
         const topic = attempt.question?.topic || 'Sem tópico';
         const key = `${subject}||${topic}`;
