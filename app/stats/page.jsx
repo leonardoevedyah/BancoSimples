@@ -28,26 +28,42 @@ export default function StatsPage() {
 
     const loadCounts = async () => {
       setMessage(null);
-      const { data: subjectsData, error: subjectsError } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('questions')
-        .select('subject, count:id')
-        .group('subject')
-        .order('subject', { ascending: true });
+        .select('id, subject, topic');
 
-      const { data: topicsData, error: topicsError } = await supabaseClient
-        .from('questions')
-        .select('subject, topic, count:id')
-        .group('subject, topic')
-        .order('subject', { ascending: true })
-        .order('topic', { ascending: true });
-
-      if (subjectsError || topicsError) {
+      if (error) {
         setMessage('Erro ao carregar estatísticas.');
         return;
       }
 
-      setSubjectCounts(subjectsData || []);
-      setTopicCounts(topicsData || []);
+      const subjectMap = {};
+      const topicMap = {};
+
+      (data || []).forEach((row) => {
+        const subjectKey = row.subject || 'Sem disciplina definida';
+        const topicKey = `${row.subject || 'Sem disciplina'}|${row.topic || 'Sem tópico'}`;
+
+        subjectMap[subjectKey] = (subjectMap[subjectKey] || 0) + 1;
+        topicMap[topicKey] = {
+          subject: row.subject,
+          topic: row.topic,
+          count: (topicMap[topicKey]?.count || 0) + 1,
+        };
+      });
+
+      const subjectsData = Object.entries(subjectMap)
+        .map(([subject, count]) => ({ subject: subject === 'Sem disciplina definida' ? null : subject, count }))
+        .sort((a, b) => (a.subject || '').localeCompare(b.subject || ''));
+
+      const topicsData = Object.values(topicMap).sort((a, b) => {
+        const subjCompare = (a.subject || '').localeCompare(b.subject || '');
+        if (subjCompare !== 0) return subjCompare;
+        return (a.topic || '').localeCompare(b.topic || '');
+      });
+
+      setSubjectCounts(subjectsData);
+      setTopicCounts(topicsData);
     };
 
     loadCounts();
