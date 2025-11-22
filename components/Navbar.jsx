@@ -34,13 +34,13 @@ export default function Navbar() {
             );
           })}
           <Link
-            href="/(auth)/signup"
+            href="/signup"
             className="rounded border border-blue-600 px-3 py-1 text-blue-700 hover:bg-blue-50"
           >
             Criar conta
           </Link>
           <Link
-            href="/(auth)/login"
+            href="/login"
             className="rounded border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50"
           >
             Login

@@ -49,7 +49,7 @@ export default function SignupPage() {
 
     setLoading(false);
     setMessage({ type: 'success', text: 'Conta criada! Faça login.' });
-    setTimeout(() => router.push('/(auth)/login'), 800);
+    setTimeout(() => router.push('/login'), 800);
   };
 
   return (
@@ -117,7 +117,7 @@ export default function SignupPage() {
       )}
       <p className="mt-4 text-sm text-slate-600">
         Já tem conta?{' '}
-        <Link href="/(auth)/login" className="text-blue-700 underline">
+        <Link href="/login" className="text-blue-700 underline">
           Fazer login
         </Link>
       </p>

@@ -20,7 +20,7 @@ export default function NotebookDetailPage() {
     const loadSession = async () => {
       const { data } = await supabaseClient.auth.getSession();
       if (!data.session) {
-        router.push('/(auth)/login');
+        router.push('/login');
         return;
       }
       setSession(data.session);

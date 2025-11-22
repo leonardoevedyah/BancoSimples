@@ -16,13 +16,13 @@ export default function HomePage() {
           Ir para o dashboard
         </Link>
         <Link
-          href="/(auth)/login"
+          href="/login"
           className="rounded border border-blue-600 px-4 py-2 text-blue-700 hover:bg-blue-50"
         >
           Fazer login
         </Link>
         <Link
-          href="/(auth)/signup"
+          href="/signup"
           className="rounded border border-green-600 px-4 py-2 text-green-700 hover:bg-green-50"
         >
           Criar conta

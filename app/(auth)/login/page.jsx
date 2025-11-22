@@ -78,7 +78,7 @@ export default function LoginPage() {
       )}
       <p className="mt-4 text-sm text-slate-600">
         Não tem conta?{' '}
-        <Link href="/(auth)/signup" className="text-blue-700 underline">
+        <Link href="/signup" className="text-blue-700 underline">
           Criar conta
         </Link>
       </p>
