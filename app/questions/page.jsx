@@ -25,6 +25,7 @@ export default function QuestionsPage() {
   const [attempts, setAttempts] = useState({});
   const [questionStats, setQuestionStats] = useState({});
   const [exporting, setExporting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const pageSize = 10;
 
@@ -162,24 +163,32 @@ export default function QuestionsPage() {
   };
 
   const loadQuestions = async (pageIndex = page) => {
-    setMessage(null);
-    const query = await buildQueryWithFilters();
-    const start = pageIndex * pageSize;
-    const end = pageIndex * pageSize + pageSize - 1;
-    const { data, error, count } = await query.range(start, end);
-    if (error) {
-      setMessage(error.message || 'Erro ao carregar questões.');
+    setLoading(true);
+    setMessage('Carregando questões...');
+    try {
+      const query = await buildQueryWithFilters();
+      const start = pageIndex * pageSize;
+      const end = pageIndex * pageSize + pageSize - 1;
+      const { data, error, count } = await query.range(start, end);
+      if (error) {
+        throw new Error(error.message || 'Erro ao carregar questões.');
+      }
+      const list = data || [];
+      setFilteredCount(typeof count === 'number' ? count : list.length);
+      setQuestions(list);
+      if (!list.length) {
+        setMessage('Nenhuma questão encontrada para os filtros selecionados.');
+      } else {
+        setMessage(null);
+      }
+      await loadAttemptStats(list);
+    } catch (err) {
       setQuestions([]);
       setFilteredCount(0);
-      return;
+      setMessage(err?.message || 'Erro ao carregar questões.');
+    } finally {
+      setLoading(false);
     }
-    const list = data || [];
-    setFilteredCount(typeof count === 'number' ? count : list.length);
-    setQuestions(list);
-    if (!list.length) {
-      setMessage('Nenhuma questão encontrada para os filtros selecionados.');
-    }
-    loadAttemptStats(list);
   };
 
   useEffect(() => {
@@ -273,6 +282,7 @@ export default function QuestionsPage() {
 
     setMessage('Questão removida com sucesso.');
     setQuestions((prev) => prev.filter((item) => item.id !== questionId));
+    setFilteredCount((prev) => (prev > 0 ? prev - 1 : 0));
   };
 
   const exportFilteredQuestions = async () => {
@@ -393,9 +403,10 @@ export default function QuestionsPage() {
         <div className="flex items-end">
           <button
             type="submit"
-            className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+            disabled={loading}
           >
-            Filtrar
+            {loading ? 'Filtrando...' : 'Filtrar'}
           </button>
         </div>
       </form>
