@@ -161,10 +161,12 @@ export default function QuestionsPage() {
     return query;
   };
 
-  const loadQuestions = async () => {
+  const loadQuestions = async (pageIndex = page) => {
     setMessage(null);
     const query = await buildQueryWithFilters();
-    const { data, error, count } = await query.range(page * pageSize, page * pageSize + pageSize - 1);
+    const start = pageIndex * pageSize;
+    const end = pageIndex * pageSize + pageSize - 1;
+    const { data, error, count } = await query.range(start, end);
     if (error) {
       setMessage(error.message || 'Erro ao carregar questões.');
       setQuestions([]);
@@ -186,7 +188,7 @@ export default function QuestionsPage() {
 
   useEffect(() => {
     if (!session) return;
-    loadQuestions();
+    loadQuestions(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, session]);
 
@@ -205,7 +207,7 @@ export default function QuestionsPage() {
     evt.preventDefault();
     setPage(0);
     setAttempts({});
-    await loadQuestions();
+    await loadQuestions(0);
   };
 
   const confirmAttempt = async (question) => {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import PDFDocument from 'pdfkit';
+import { createRequire } from 'module';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
@@ -82,7 +83,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Nenhuma questão para exportar' }, { status: 400 });
     }
 
+    const require = createRequire(import.meta.url);
+    const helveticaPath = require.resolve('pdfkit/js/data/Helvetica.afm');
+
     const doc = new PDFDocument();
+    doc.registerFont('Helvetica', helveticaPath);
+    doc.font('Helvetica');
     const buffers = [];
     doc.on('data', (chunk) => buffers.push(chunk));
 
