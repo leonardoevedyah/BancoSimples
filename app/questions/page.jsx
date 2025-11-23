@@ -16,6 +16,7 @@ export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
   const [page, setPage] = useState(0);
   const [message, setMessage] = useState(null);
+  const [filteredCount, setFilteredCount] = useState(0);
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
   const [allTopics, setAllTopics] = useState([]);
@@ -23,6 +24,7 @@ export default function QuestionsPage() {
   const [session, setSession] = useState(null);
   const [attempts, setAttempts] = useState({});
   const [questionStats, setQuestionStats] = useState({});
+  const [exporting, setExporting] = useState(false);
 
   const pageSize = 10;
 
@@ -143,8 +145,11 @@ export default function QuestionsPage() {
     return `Há ${weeks} semana(s)`;
   };
 
-  const loadQuestions = async () => {
-    let query = supabaseClient.from('questions').select('*').order('created_at', { ascending: false });
+  const buildQueryWithFilters = async () => {
+    let query = supabaseClient
+      .from('questions')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
     if (filters.subject) query = query.ilike('subject', `%${filters.subject}%`);
     if (filters.topic) query = query.ilike('topic', `%${filters.topic}%`);
     if (filters.difficulty) query = query.eq('difficulty', filters.difficulty);
@@ -153,12 +158,17 @@ export default function QuestionsPage() {
     if (excluded.length) {
       query = query.not('id', 'in', `(${excluded.map((id) => `"${id}"`).join(',')})`);
     }
+    return query;
+  };
 
-    const { data, error } = await query.range(page * pageSize, page * pageSize + pageSize - 1);
+  const loadQuestions = async () => {
+    const query = await buildQueryWithFilters();
+    const { data, error, count } = await query.range(page * pageSize, page * pageSize + pageSize - 1);
     if (error) {
       setMessage(error.message);
       return;
     }
+    setFilteredCount(count || 0);
     setQuestions(data || []);
     loadAttemptStats(data || []);
   };
@@ -187,6 +197,7 @@ export default function QuestionsPage() {
   const handleSubmit = (evt) => {
     evt.preventDefault();
     setPage(0);
+    setAttempts({});
     loadQuestions();
   };
 
@@ -253,6 +264,49 @@ export default function QuestionsPage() {
 
     setMessage('Questão removida com sucesso.');
     setQuestions((prev) => prev.filter((item) => item.id !== questionId));
+  };
+
+  const exportFilteredQuestions = async () => {
+    setExporting(true);
+    setMessage(null);
+    try {
+      const query = await buildQueryWithFilters();
+      const { data, error } = await query;
+      if (error) {
+        setMessage('Erro ao carregar questões para exportar.');
+        setExporting(false);
+        return;
+      }
+      const questionIds = (data || []).map((q) => q.id);
+      if (!questionIds.length) {
+        setMessage('Nenhuma questão para exportar.');
+        setExporting(false);
+        return;
+      }
+      const response = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question_ids: questionIds, title: 'Questões filtradas' }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setMessage(result?.error || 'Falha ao exportar PDF.');
+      } else if (result?.url) {
+        window.open(result.url, '_blank');
+      }
+    } catch (err) {
+      setMessage('Erro inesperado ao exportar.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const summary = () => {
+    const answeredAttempts = Object.values(attempts).filter((item) => item?.checked);
+    const answered = answeredAttempts.length;
+    const correct = answeredAttempts.filter((item) => item.isCorrect).length;
+    const wrong = answeredAttempts.filter((item) => !item.isCorrect).length;
+    return { answered, correct, wrong };
   };
 
   return (
@@ -333,6 +387,28 @@ export default function QuestionsPage() {
       </form>
 
       {message && <p className="text-sm text-blue-700">{message}</p>}
+
+      <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+        <p className="text-sm font-medium text-slate-800">
+          Total filtradas: {filteredCount || questions.length}
+        </p>
+        {(() => {
+          const s = summary();
+          return (
+            <p className="text-sm text-slate-700">
+              Progresso: respondeu {s.answered} de {filteredCount || questions.length} · Acertos: {s.correct} · Erros: {s.wrong}
+            </p>
+          );
+        })()}
+        <button
+          type="button"
+          onClick={exportFilteredQuestions}
+          disabled={exporting}
+          className="inline-flex w-full items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
+        >
+          {exporting ? 'Exportando...' : 'Exportar PDF (questões filtradas)'}
+        </button>
+      </div>
 
       <div className="space-y-4">
         {questions.map((q) => {

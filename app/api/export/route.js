@@ -5,8 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 export async function POST(request) {
   const body = await request.json();
   const notebookId = body?.notebook_id;
-  if (!notebookId) {
-    return NextResponse.json({ error: 'notebook_id é obrigatório' }, { status: 400 });
+  const questionIds = body?.question_ids;
+  const customTitle = body?.title;
+  if (!notebookId && !questionIds) {
+    return NextResponse.json({ error: 'É preciso fornecer notebook_id ou question_ids' }, { status: 400 });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -17,30 +19,46 @@ export async function POST(request) {
 
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  const { data: notebook, error: notebookError } = await supabase
-    .from('notebooks')
-    .select('title')
-    .eq('id', notebookId)
-    .single();
-  if (notebookError) {
-    return NextResponse.json({ error: notebookError.message }, { status: 400 });
-  }
+  let questions = [];
+  let title = customTitle || 'Export';
 
-  const { data: questions, error: questionsError } = await supabase
-    .from('notebook_questions')
-    .select('order_index, question:question_id(statement, options, correct_option)')
-    .eq('notebook_id', notebookId)
-    .order('order_index', { ascending: true });
+  if (notebookId) {
+    const { data: notebook, error: notebookError } = await supabase
+      .from('notebooks')
+      .select('title')
+      .eq('id', notebookId)
+      .single();
+    if (notebookError) {
+      return NextResponse.json({ error: notebookError.message }, { status: 400 });
+    }
+    title = notebook?.title || 'Caderno';
 
-  if (questionsError) {
-    return NextResponse.json({ error: questionsError.message }, { status: 400 });
+    const { data: notebookQuestions, error: notebookQuestionsError } = await supabase
+      .from('notebook_questions')
+      .select('order_index, question:question_id(statement, options, correct_option, explanation)')
+      .eq('notebook_id', notebookId)
+      .order('order_index', { ascending: true });
+
+    if (notebookQuestionsError) {
+      return NextResponse.json({ error: notebookQuestionsError.message }, { status: 400 });
+    }
+    questions = notebookQuestions;
+  } else if (questionIds?.length) {
+    const { data: fetched, error: fetchError } = await supabase
+      .from('questions')
+      .select('id, statement, options, correct_option, explanation')
+      .in('id', questionIds);
+    if (fetchError) {
+      return NextResponse.json({ error: fetchError.message }, { status: 400 });
+    }
+    questions = (fetched || []).map((q, idx) => ({ order_index: idx, question: q }));
   }
 
   const doc = new PDFDocument();
   const buffers = [];
   doc.on('data', (chunk) => buffers.push(chunk));
 
-  doc.fontSize(18).text(notebook.title || 'Caderno', { align: 'center' });
+  doc.fontSize(18).text(title, { align: 'center' });
   doc.moveDown();
 
   questions.forEach((item, idx) => {
@@ -53,11 +71,12 @@ export async function POST(request) {
   });
 
   doc.addPage();
-  doc.fontSize(14).text('Gabarito', { underline: true });
+  doc.fontSize(14).text('Gabarito e comentários', { underline: true });
   doc.moveDown();
   questions.forEach((item, idx) => {
     const correct = String.fromCharCode(65 + item.question.correct_option);
-    doc.text(`${idx + 1}. ${correct}`);
+    const explanation = item.question.explanation || 'Sem comentário';
+    doc.text(`${idx + 1}. ${correct} - ${explanation}`);
   });
 
   doc.end();
