@@ -162,15 +162,22 @@ export default function QuestionsPage() {
   };
 
   const loadQuestions = async () => {
+    setMessage(null);
     const query = await buildQueryWithFilters();
     const { data, error, count } = await query.range(page * pageSize, page * pageSize + pageSize - 1);
     if (error) {
-      setMessage(error.message);
+      setMessage(error.message || 'Erro ao carregar questões.');
+      setQuestions([]);
+      setFilteredCount(0);
       return;
     }
-    setFilteredCount(count || 0);
-    setQuestions(data || []);
-    loadAttemptStats(data || []);
+    const list = data || [];
+    setFilteredCount(typeof count === 'number' ? count : list.length);
+    setQuestions(list);
+    if (!list.length) {
+      setMessage('Nenhuma questão encontrada para os filtros selecionados.');
+    }
+    loadAttemptStats(list);
   };
 
   useEffect(() => {
@@ -194,11 +201,11 @@ export default function QuestionsPage() {
     setFilters({ ...filters, [name]: value });
   };
 
-  const handleSubmit = (evt) => {
+  const handleSubmit = async (evt) => {
     evt.preventDefault();
     setPage(0);
     setAttempts({});
-    loadQuestions();
+    await loadQuestions();
   };
 
   const confirmAttempt = async (question) => {
@@ -288,7 +295,12 @@ export default function QuestionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question_ids: questionIds, title: 'Questões filtradas' }),
       });
-      const result = await response.json();
+      let result = null;
+      try {
+        result = await response.json();
+      } catch (err) {
+        // ignore JSON parse errors so we can still surface a generic message
+      }
       if (!response.ok) {
         setMessage(result?.error || 'Falha ao exportar PDF.');
       } else if (result?.url) {

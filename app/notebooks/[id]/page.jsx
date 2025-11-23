@@ -116,7 +116,12 @@ export default function NotebookDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notebook_id: params.id }),
       });
-      const result = await response.json();
+      let result = null;
+      try {
+        result = await response.json();
+      } catch (err) {
+        // fallback handled below
+      }
       if (!response.ok) {
         setMessage(result?.error || 'Erro ao exportar PDF do caderno.');
       } else if (result?.url) {
