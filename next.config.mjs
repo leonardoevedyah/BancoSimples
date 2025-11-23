@@ -3,8 +3,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    appDir: true,
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.afm$/,
+      type: 'asset/source',
+    });
+    return config;
   },
 };
 
