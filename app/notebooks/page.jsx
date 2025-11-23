@@ -20,6 +20,8 @@ export default function NotebooksPage() {
   const [notebooks, setNotebooks] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
+  const [allTopics, setAllTopics] = useState([]);
+  const [subjectTopicMap, setSubjectTopicMap] = useState({});
 
   useEffect(() => {
     const loadSession = async () => {
@@ -50,18 +52,40 @@ export default function NotebooksPage() {
     const loadFilterOptions = async () => {
       const { data, error } = await supabaseClient.from('questions').select('subject, topic');
       if (error) return;
+
+      const subjectMap = {};
+      (data || []).forEach((row) => {
+        if (row.subject && row.topic) {
+          if (!subjectMap[row.subject]) subjectMap[row.subject] = new Set();
+          subjectMap[row.subject].add(row.topic);
+        }
+      });
+
       const uniqueSubjects = Array.from(
         new Set((data || []).map((row) => row.subject).filter(Boolean)),
       ).sort();
       const uniqueTopics = Array.from(new Set((data || []).map((row) => row.topic).filter(Boolean))).sort();
+      const normalizedMap = Object.fromEntries(
+        Object.entries(subjectMap).map(([key, value]) => [key, Array.from(value).sort()]),
+      );
+
       setSubjects(uniqueSubjects);
       setTopics(uniqueTopics);
+      setAllTopics(uniqueTopics);
+      setSubjectTopicMap(normalizedMap);
     };
     loadFilterOptions();
   }, []);
 
   const handleChange = (evt) => {
-    setForm({ ...form, [evt.target.name]: evt.target.value });
+    const { name, value } = evt.target;
+    if (name === 'subject') {
+      const scopedTopics = value ? subjectTopicMap[value] || [] : allTopics;
+      setTopics(scopedTopics);
+      setForm({ ...form, subject: value, topic: '' });
+      return;
+    }
+    setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (evt) => {

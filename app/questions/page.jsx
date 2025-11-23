@@ -18,6 +18,8 @@ export default function QuestionsPage() {
   const [message, setMessage] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
+  const [allTopics, setAllTopics] = useState([]);
+  const [subjectTopicMap, setSubjectTopicMap] = useState({});
   const [session, setSession] = useState(null);
   const [attempts, setAttempts] = useState({});
   const [questionStats, setQuestionStats] = useState({});
@@ -30,12 +32,25 @@ export default function QuestionsPage() {
       setMessage('Erro ao carregar filtros disponíveis.');
       return;
     }
-    const uniqueSubjects = Array.from(
-      new Set((data || []).map((row) => row.subject).filter(Boolean)),
-    ).sort();
+    const subjectMap = {};
+    (data || []).forEach((row) => {
+      if (row.subject && row.topic) {
+        if (!subjectMap[row.subject]) subjectMap[row.subject] = new Set();
+        subjectMap[row.subject].add(row.topic);
+      }
+    });
+
+    const uniqueSubjects = Array.from(new Set((data || []).map((row) => row.subject).filter(Boolean))).sort();
     const uniqueTopics = Array.from(new Set((data || []).map((row) => row.topic).filter(Boolean))).sort();
+
+    const normalizedMap = Object.fromEntries(
+      Object.entries(subjectMap).map(([key, value]) => [key, Array.from(value).sort()]),
+    );
+
     setSubjects(uniqueSubjects);
+    setAllTopics(uniqueTopics);
     setTopics(uniqueTopics);
+    setSubjectTopicMap(normalizedMap);
   };
 
   useEffect(() => {
@@ -159,7 +174,14 @@ export default function QuestionsPage() {
   }, [page, session]);
 
   const handleFilter = (evt) => {
-    setFilters({ ...filters, [evt.target.name]: evt.target.value });
+    const { name, value } = evt.target;
+    if (name === 'subject') {
+      const scopedTopics = value ? subjectTopicMap[value] || [] : allTopics;
+      setTopics(scopedTopics);
+      setFilters({ ...filters, subject: value, topic: '' });
+      return;
+    }
+    setFilters({ ...filters, [name]: value });
   };
 
   const handleSubmit = (evt) => {
@@ -213,6 +235,13 @@ export default function QuestionsPage() {
     }
     if (!sessionData.session) {
       setMessage('Faça login para remover questões.');
+      return;
+    }
+
+    const confirmationWord = 'deletar';
+    const typed = window.prompt(`Digite "${confirmationWord}" para confirmar a exclusão da questão.`);
+    if (typed !== confirmationWord) {
+      setMessage('Captcha incorreto. Digite a palavra indicada para deletar.');
       return;
     }
 
@@ -337,7 +366,7 @@ export default function QuestionsPage() {
                   onClick={() => deleteQuestion(q.id)}
                   className="w-full rounded border border-red-600 px-4 py-2 text-red-700 hover:bg-red-50 sm:w-auto"
                 >
-                  Deletar questão ruim
+                  Deletar questão
                 </button>
                 {attempt.checked && (
                   <span
