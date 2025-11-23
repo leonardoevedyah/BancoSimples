@@ -16,7 +16,6 @@ export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
   const [page, setPage] = useState(0);
   const [message, setMessage] = useState(null);
-  const [filteredCount, setFilteredCount] = useState(0);
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
   const [allTopics, setAllTopics] = useState([]);
@@ -24,7 +23,6 @@ export default function QuestionsPage() {
   const [session, setSession] = useState(null);
   const [attempts, setAttempts] = useState({});
   const [questionStats, setQuestionStats] = useState({});
-  const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const pageSize = 10;
@@ -169,12 +167,11 @@ export default function QuestionsPage() {
       const query = await buildQueryWithFilters();
       const start = pageIndex * pageSize;
       const end = pageIndex * pageSize + pageSize - 1;
-      const { data, error, count } = await query.range(start, end);
+      const { data, error } = await query.range(start, end);
       if (error) {
         throw new Error(error.message || 'Erro ao carregar questões.');
       }
       const list = data || [];
-      setFilteredCount(typeof count === 'number' ? count : list.length);
       setQuestions(list);
       if (!list.length) {
         setMessage('Nenhuma questão encontrada para os filtros selecionados.');
@@ -268,11 +265,8 @@ export default function QuestionsPage() {
     }
 
     const confirmationWord = 'deletar';
-    const typed = window.prompt(`Digite "${confirmationWord}" para confirmar a exclusão da questão.`);
-    if (typed !== confirmationWord) {
-      setMessage('Captcha incorreto. Digite a palavra indicada para deletar.');
-      return;
-    }
+    const confirmed = window.confirm(`Digite "${confirmationWord}" para confirmar a exclusão da questão.`);
+    if (!confirmed) return;
 
     const { error } = await supabaseClient.from('questions').delete().eq('id', questionId);
     if (error) {
@@ -282,55 +276,6 @@ export default function QuestionsPage() {
 
     setMessage('Questão removida com sucesso.');
     setQuestions((prev) => prev.filter((item) => item.id !== questionId));
-    setFilteredCount((prev) => (prev > 0 ? prev - 1 : 0));
-  };
-
-  const exportFilteredQuestions = async () => {
-    setExporting(true);
-    setMessage(null);
-    try {
-      const query = await buildQueryWithFilters();
-      const { data, error } = await query;
-      if (error) {
-        setMessage('Erro ao carregar questões para exportar.');
-        setExporting(false);
-        return;
-      }
-      const questionIds = (data || []).map((q) => q.id);
-      if (!questionIds.length) {
-        setMessage('Nenhuma questão para exportar.');
-        setExporting(false);
-        return;
-      }
-      const response = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question_ids: questionIds, title: 'Questões filtradas' }),
-      });
-      let result = null;
-      try {
-        result = await response.json();
-      } catch (err) {
-        // ignore JSON parse errors so we can still surface a generic message
-      }
-      if (!response.ok) {
-        setMessage(result?.error || 'Falha ao exportar PDF.');
-      } else if (result?.url) {
-        window.open(result.url, '_blank');
-      }
-    } catch (err) {
-      setMessage('Erro inesperado ao exportar.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const summary = () => {
-    const answeredAttempts = Object.values(attempts).filter((item) => item?.checked);
-    const answered = answeredAttempts.length;
-    const correct = answeredAttempts.filter((item) => item.isCorrect).length;
-    const wrong = answeredAttempts.filter((item) => !item.isCorrect).length;
-    return { answered, correct, wrong };
   };
 
   return (
@@ -413,26 +358,8 @@ export default function QuestionsPage() {
 
       {message && <p className="text-sm text-blue-700">{message}</p>}
 
-      <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-        <p className="text-sm font-medium text-slate-800">
-          Total filtradas: {filteredCount || questions.length}
-        </p>
-        {(() => {
-          const s = summary();
-          return (
-            <p className="text-sm text-slate-700">
-              Progresso: respondeu {s.answered} de {filteredCount || questions.length} · Acertos: {s.correct} · Erros: {s.wrong}
-            </p>
-          );
-        })()}
-        <button
-          type="button"
-          onClick={exportFilteredQuestions}
-          disabled={exporting}
-          className="inline-flex w-full items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
-        >
-          {exporting ? 'Exportando...' : 'Exportar PDF (questões filtradas)'}
-        </button>
+      <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-sm">
+        Total filtradas: {questions.length}
       </div>
 
       <div className="space-y-4">

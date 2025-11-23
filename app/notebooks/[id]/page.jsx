@@ -16,7 +16,6 @@ export default function NotebookDetailPage() {
   const [checked, setChecked] = useState({});
   const [finished, setFinished] = useState(false);
   const [message, setMessage] = useState(null);
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -107,33 +106,6 @@ export default function NotebookDetailPage() {
     }
   };
 
-  const exportNotebook = async () => {
-    setExporting(true);
-    setMessage(null);
-    try {
-      const response = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notebook_id: params.id }),
-      });
-      let result = null;
-      try {
-        result = await response.json();
-      } catch (err) {
-        // fallback handled below
-      }
-      if (!response.ok) {
-        setMessage(result?.error || 'Erro ao exportar PDF do caderno.');
-      } else if (result?.url) {
-        window.open(result.url, '_blank');
-      }
-    } catch (error) {
-      setMessage('Erro inesperado ao exportar.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
   const finalizeSession = async () => {
     const userId = session?.user?.id;
     if (!userId) return;
@@ -169,17 +141,7 @@ export default function NotebookDetailPage() {
           <h1 className="text-2xl font-bold leading-tight">{notebook.title}</h1>
           <p className="text-sm text-slate-600">Questão {currentIndex + 1} de {questions.length}</p>
         </div>
-        <div className="flex flex-col gap-2 sm:items-end">
-          {finished && <p className="text-green-700">Sessão concluída</p>}
-          <button
-            type="button"
-            onClick={exportNotebook}
-            disabled={exporting}
-            className="w-full rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
-          >
-            {exporting ? 'Exportando...' : 'Exportar PDF do caderno'}
-          </button>
-        </div>
+        <div className="flex flex-col gap-2 sm:items-end">{finished && <p className="text-green-700">Sessão concluída</p>}</div>
       </div>
 
       {currentQuestion ? (
